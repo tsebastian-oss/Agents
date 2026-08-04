@@ -1,4 +1,4 @@
-name: Verify Agents SaaS
+name: CI
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -15,22 +15,8 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - name: Checkout source branch
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-
-      - name: Remove temporary bootstrap files
-        if: github.event_name == 'pull_request'
-        run: |
-          rm -rf scripts/archive scripts/bootstrap_project.py .bootstrap-trigger
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: remove bootstrap artifacts"
-            git push origin "HEAD:${{ github.head_ref }}"
-          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
