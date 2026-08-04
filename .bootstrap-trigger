@@ -1,4 +1,0 @@
-Bootstrap the verified MVP foundation through the pull request workflow.
-Retry with TypeScript 6.0.3 for Next.js compatibility.
-Publish only repository source files.
-Finalize cleanup and locked build verification.
