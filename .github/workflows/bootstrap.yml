@@ -34,6 +34,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Pin Next-compatible TypeScript
+        run: npm pkg set devDependencies.typescript=6.0.3
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
