@@ -1,17 +1,16 @@
-name: Bootstrap Agents SaaS
+name: Verify Agents SaaS
 
 on:
-  workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/bootstrap.yml"
   pull_request:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
-  bootstrap:
+  verify:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
@@ -21,43 +20,29 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Assemble project files
-        run: python scripts/bootstrap_project.py
+      - name: Remove temporary bootstrap files
+        if: github.event_name == 'pull_request'
+        run: |
+          rm -rf scripts/archive scripts/bootstrap_project.py .bootstrap-trigger
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: remove bootstrap artifacts"
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
 
-      - name: Pin Next-compatible TypeScript
-        run: npm pkg set devDependencies.typescript=6.0.3
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
 
       - name: Build
         run: npm run build
-
-      - name: Commit verified scaffold
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git commit -m "feat: bootstrap self-service agents SaaS"
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git push origin "HEAD:${{ github.head_ref }}"
-          else
-            git push origin HEAD:main
-          fi
